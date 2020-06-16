@@ -22,6 +22,7 @@ func main() {
 	}
 
 	r := gin.Default()
+	r.GET("/services/config", queryServiceConfig(configMap))
 	r.GET("/configs/:appId/:cluster/:namespace", queryConfig(configMap))
 	r.GET("/configfiles/json/:appId/:cluster/:namespace", queryConfigJSON(configMap))
 	r.GET("/notifications/v2", notificationsLongPolling(configMap))
@@ -79,6 +80,18 @@ func queryConfigValidation(c *gin.Context, configMap map[string]interface{}) (ma
 	}
 
 	return configurationsObj.(map[string]interface{}), releaseKeyObj.(string)
+}
+
+func queryServiceConfig(configMap map[string]interface{}) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		c.JSON(200, []gin.H{
+			gin.H{
+				"appName": "APOLLO-CONFIGSERVICE",
+				"instanceId": "fqdn.com:apollo-configservice:8080",
+				"homepageUrl": "http://127.0.0.1:8080/",
+			},
+		})
+	}
 }
 
 func queryConfig(configMap map[string]interface{}) func(c *gin.Context) {
