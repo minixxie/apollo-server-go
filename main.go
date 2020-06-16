@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"log"
 	"fmt"
 	"time"
@@ -84,11 +85,15 @@ func queryConfigValidation(c *gin.Context, configMap map[string]interface{}) (ma
 
 func queryServiceConfig(configMap map[string]interface{}) func(c *gin.Context) {
 	return func(c *gin.Context) {
+		urlPrefix := os.Getenv("URL_PREFIX")
+		if urlPrefix == "" {
+			urlPrefix = "http://127.0.0.1:80/"
+		}
 		c.JSON(200, []gin.H{
 			gin.H{
 				"appName": "APOLLO-CONFIGSERVICE",
-				"instanceId": "fqdn.com:apollo-configservice:8080",
-				"homepageUrl": "http://127.0.0.1:8080/",
+				"instanceId": "fqdn.com:apollo-configservice:80",
+				"homepageUrl": urlPrefix,
 			},
 		})
 	}

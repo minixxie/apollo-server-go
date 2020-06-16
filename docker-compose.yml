@@ -9,6 +9,7 @@ services:
     working_dir: /app
     environment:
       - GIN_MODE=release
+      - URL_PREFIX=http://apollo.local
     ports:
       - "8070:80"
     network_mode: bridge
