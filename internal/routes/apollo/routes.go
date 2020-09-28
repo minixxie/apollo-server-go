@@ -53,14 +53,29 @@ func validateConfig(cfg *Config) {
 // Routes registers the http handles for Apollo
 func (a *Apollo) Routes(r *httprouter.Router) {
 	r.GET("/healthz", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		w.WriteHeader(200)
+		w.Write([]byte("OK"))
 	})
 	r.GET("/configs/:appId/:cluster/:namespace", a.queryConfig)
 	r.GET("/configfiles/json/:appId/:cluster/:namespace", a.queryConfigJSON)
 	r.GET("/notifications/v2", a.notificationsLongPolling)
+
+	// capture invalid http calls
+	r.HandleMethodNotAllowed = false
+	r.NotFound = &notFoundHandler{a.cfg.Log}
+}
+
+type notFoundHandler struct {
+	log nlogger.Provider
+}
+
+func (h *notFoundHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.log.Get().Warn(fmt.Sprintf("http path not found: %s %s", r.Method, r.URL.String()))
+	w.WriteHeader(404)
+	w.Write([]byte("path not found"))
 }
 
 func (a *Apollo) queryConfig(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	log := a.cfg.Log.Get()
 	appID := ps.ByName("appId")
 	cluster := ps.ByName("cluster")
 	namespace := ps.ByName("namespace")
@@ -68,16 +83,9 @@ func (a *Apollo) queryConfig(w http.ResponseWriter, r *http.Request, ps httprout
 	cm := a.w.Config()
 	ns, ok := cm[appID][cluster][namespace]
 	if !ok {
-		a.cfg.Log.Get().Warn(fmt.Sprintf("no config for request: %s", r.URL.String()))
+		log.Warn(fmt.Sprintf("no config for request: %s", r.URL.String()))
 		w.WriteHeader(404)
 		return
-	}
-	if v, ok := r.URL.Query()["releaseKey"]; ok && len(v) == 1 {
-		if ns.ReleaseKey != v[0] {
-			a.cfg.Log.Get().Warn(fmt.Sprintf("no config for request with releaseKey: %s", r.URL.String()))
-			w.WriteHeader(404)
-			return
-		}
 	}
 	type rsp struct {
 		AppID          string            `json:"appId"`
@@ -94,14 +102,16 @@ func (a *Apollo) queryConfig(w http.ResponseWriter, r *http.Request, ps httprout
 		Configurations: ns.Configurations,
 	})
 	if err != nil {
-		a.cfg.Log.Get().Error(err.Error())
+		log.Error(err.Error())
 		w.WriteHeader(500)
 		return
 	}
 	w.Write(json)
+	log.Debug(fmt.Sprintf("served config for request: %s", r.URL.String()))
 }
 
 func (a *Apollo) queryConfigJSON(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	log := a.cfg.Log.Get()
 	appID := ps.ByName("appId")
 	cluster := ps.ByName("cluster")
 	namespace := ps.ByName("namespace")
@@ -110,18 +120,19 @@ func (a *Apollo) queryConfigJSON(w http.ResponseWriter, r *http.Request, ps http
 
 	ns, ok := cm[appID][cluster][namespace]
 	if !ok {
-		a.cfg.Log.Get().Warn(fmt.Sprintf("no config for request: %s", r.URL.String()))
+		log.Warn(fmt.Sprintf("no config for request: %s", r.URL.String()))
 		w.WriteHeader(404)
 		return
 	}
 
 	json, err := json.Marshal(ns.Configurations)
 	if err != nil {
-		a.cfg.Log.Get().Error(err.Error())
+		log.Error(err.Error())
 		w.WriteHeader(500)
 		return
 	}
 	w.Write(json)
+	log.Debug(fmt.Sprintf("served config for request: %s", r.URL.String()))
 }
 
 func (a *Apollo) notificationsLongPolling(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -142,6 +153,7 @@ func (a *Apollo) notificationsLongPolling(w http.ResponseWriter, r *http.Request
 		w.WriteHeader(500)
 		return
 	}
+	a.cfg.Log.Get().Debug(fmt.Sprintf("served poll for request: %s", r.URL.String()))
 }
 
 func (a *Apollo) newPoll(ctx context.Context, notifications []longpoll.Notification, w http.ResponseWriter) error {

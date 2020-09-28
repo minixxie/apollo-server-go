@@ -38,11 +38,11 @@ type Poll struct {
 // New creates a new long Poll
 func New(ctx context.Context, cfg Config, w http.ResponseWriter) (*Poll, error) {
 	validateConfig(&cfg)
-	c := make(chan struct{}, 1)
 	// pollCtx is used to check whether the poll is still open
-	// it it guaranteed to be done only after the input ctx is closed
+	// it is guaranteed to be done only after the input ctx is done
 	// and a response has been written to w
 	pollCtx, cancel := context.WithCancel(context.Background())
+	c := make(chan struct{})
 	done := time.After(cfg.Timeout)
 	p := &Poll{
 		ctx:     pollCtx,
@@ -51,7 +51,17 @@ func New(ctx context.Context, cfg Config, w http.ResponseWriter) (*Poll, error) 
 		c:       c,
 	}
 	go func() {
-		defer cancel()
+		defer func() {
+			cancel()
+			// make sure there is no deadlock incase
+			// there is an update event received while closing pole
+			select {
+			case <-c:
+				cfg.Log.Get().Debug("poll chan received event while closing")
+			default:
+				// expected behaviour, do nothing
+			}
+		}()
 		select {
 		case <-ctx.Done():
 			cfg.Log.Get().Debug("poll context was cancelled, stoped watching for a change")

@@ -63,7 +63,7 @@ func TestWatcher(t *testing.T) {
 
 	// mock fs and load the stubbed config
 	w, _ := New(ctx, Config{File: "/dev/null"})
-	MockFS(w, appFS)
+	w.MockFS(appFS)
 	triggerWriteEvent(ctx, t, w)
 	// verify config values
 	require.EqualValues(t, stubConfigs[0], w.Config())
@@ -87,7 +87,7 @@ func TestReadConfigMap(t *testing.T) {
 
 	w, err := New(ctx, Config{File: "/dev/null"})
 	require.EqualError(t, err, "invalid config file")
-	MockFS(w, appFS)
+	w.MockFS(appFS)
 
 	t.Run("file not exist", func(t *testing.T) {
 		require.EqualError(t, w.readConfigMap(), "open /dev/null: file does not exist")
@@ -149,16 +149,6 @@ func TestReadConfigMap(t *testing.T) {
 			configMap: `myApp:
             myCluster:
               myNamespace: {}`,
-		},
-		{
-			name:        "empty releaseKey",
-			expectedErr: "invalid releaseKey '' in myApp/myCluster/myNamespace",
-			configMap: `myApp:
-            myCluster:
-              myNamespace:
-                releaseKey: ""
-                configurations:
-                  snowflake.uri: "http://192.168.0.1/snowflake"`,
 		},
 		{
 			name:        "empty config key",

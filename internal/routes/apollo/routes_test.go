@@ -31,17 +31,17 @@ var stubConfigs = []watcher.ConfigMap{
 }
 
 func TestQueryConfig(t *testing.T) {
-	// setup apollo
-	a, err := New(context.Background(), Config{ConfigPath: "/dev/null"})
-	require.EqualError(t, err, "invalid config file")
-
 	// mock fs
 	appFS := afero.NewMemMapFs()
 	appFS.MkdirAll("/dev", 0755)
 	data, err := yaml.Marshal(stubConfigs[0])
 	require.Nil(t, err)
 	require.Nil(t, afero.WriteFile(appFS, "/dev/null", data, 0644))
-	watcher.MockFS(a.w, appFS)
+
+	// setup apollo
+	a, err := New(context.Background(), Config{ConfigPath: "/dev/null"})
+	require.EqualError(t, err, "invalid config file")
+	a.w.MockFS(appFS)
 	require.Nil(t, a.w.ReloadConfig())
 
 	t.Run("status 200", func(t *testing.T) {
@@ -104,37 +104,20 @@ func TestQueryConfig(t *testing.T) {
 		require.Nil(t, err)
 		require.Equal(t, "", string(b))
 	})
-
-	t.Run("status 404 - releaseKey", func(t *testing.T) {
-		// call the handler
-		req := httptest.NewRequest("GET", "/configs/app/cluster/ns?releaseKey=404", nil)
-		w := httptest.NewRecorder()
-		ps := httprouter.Params{
-			httprouter.Param{Key: "appId", Value: "app"},
-			httprouter.Param{Key: "cluster", Value: "cluster"},
-			httprouter.Param{Key: "namespace", Value: "ns"},
-		}
-		a.queryConfig(w, req, ps)
-		rsp := w.Result()
-		require.Equal(t, 404, rsp.StatusCode)
-		b, err := ioutil.ReadAll(rsp.Body)
-		require.Nil(t, err)
-		require.Equal(t, "", string(b))
-	})
 }
 
 func TestQueryConfigJSON(t *testing.T) {
-	// setup apollo
-	a, err := New(context.Background(), Config{ConfigPath: "/dev/null"})
-	require.EqualError(t, err, "invalid config file")
-
 	// mock fs
 	appFS := afero.NewMemMapFs()
 	appFS.MkdirAll("/dev", 0755)
 	data, err := yaml.Marshal(stubConfigs[0])
 	require.Nil(t, err)
 	require.Nil(t, afero.WriteFile(appFS, "/dev/null", data, 0644))
-	watcher.MockFS(a.w, appFS)
+
+	// setup apollo
+	a, err := New(context.Background(), Config{ConfigPath: "/dev/null"})
+	require.EqualError(t, err, "invalid config file")
+	a.w.MockFS(appFS)
 	require.Nil(t, a.w.ReloadConfig())
 
 	t.Run("status 200", func(t *testing.T) {
@@ -188,7 +171,7 @@ func TestNotificationsLongPolling(t *testing.T) {
 		data, err := yaml.Marshal(stubConfigs[0])
 		require.Nil(t, err)
 		require.Nil(t, afero.WriteFile(appFS, "/dev/null", data, 0644))
-		watcher.MockFS(a.w, appFS)
+		a.w.MockFS(appFS)
 
 		// call the handler
 		q := "?notifications=" + url.QueryEscape(`[{"notificationId":1,"namespaceName":"ns"}]`)
@@ -221,14 +204,17 @@ func TestNotificationsLongPolling(t *testing.T) {
 	})
 
 	t.Run("no change", func(t *testing.T) {
-		// setup apollo
-		a, err := New(context.Background(), Config{ConfigPath: "/dev/null", PollTimeout: time.Millisecond})
-		require.Error(t, err)
-
 		// mock fs
 		appFS := afero.NewMemMapFs()
 		appFS.MkdirAll("/dev", 0755)
-		watcher.MockFS(a.w, appFS)
+
+		// setup apollo
+		a, err := New(context.Background(), Config{
+			ConfigPath:  "/dev/null",
+			PollTimeout: time.Second,
+		})
+		require.Error(t, err)
+		a.w.MockFS(appFS)
 
 		// call the handler
 		q := "?notifications=" + url.QueryEscape(`[{"notificationId":1,"namespaceName":"ns"}]`)
@@ -248,14 +234,14 @@ func TestNotificationsLongPolling(t *testing.T) {
 	})
 
 	t.Run("context cancelled", func(t *testing.T) {
-		// setup apollo
-		a, err := New(context.Background(), Config{ConfigPath: "/dev/null"})
-		require.Error(t, err)
-
 		// mock fs
 		appFS := afero.NewMemMapFs()
 		appFS.MkdirAll("/dev", 0755)
-		watcher.MockFS(a.w, appFS)
+
+		// setup apollo
+		a, err := New(context.Background(), Config{ConfigPath: "/dev/null"})
+		require.Error(t, err)
+		a.w.MockFS(appFS)
 
 		// call the handler
 		q := "?notifications=" + url.QueryEscape(`[{"notificationId":1,"namespaceName":"ns"}]`)

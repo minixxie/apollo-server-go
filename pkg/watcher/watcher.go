@@ -71,8 +71,7 @@ func New(ctx context.Context, cfg Config) (*Watcher, error) {
 				return
 			case event := <-fw.Event:
 				cfg.Log.Get().Debug(fmt.Sprintf("watcher received event: %s", event))
-				err := w.readConfigMap()
-				if err != nil {
+				if err := w.readConfigMap(); err != nil {
 					cfg.Log.Get().Error(fmt.Sprintf("error reading file: %v", err))
 				} else {
 					updateChan <- struct{}{}
@@ -93,11 +92,7 @@ func New(ctx context.Context, cfg Config) (*Watcher, error) {
 	}()
 
 	err := w.readConfigMap()
-	if err != nil {
-		return w, err
-	}
-
-	return w, nil
+	return w, err
 }
 
 func validateConfig(cfg *Config) {
@@ -110,7 +105,9 @@ func validateConfig(cfg *Config) {
 }
 
 // MockFS injects mocked fs into Watcher
-func MockFS(w *Watcher, fs afero.Fs) {
+// this should only be called immediately after watcher is initialized
+// since it's not a thread safe operation
+func (w *Watcher) MockFS(fs afero.Fs) {
 	w.fs = fs
 	return
 }
@@ -159,9 +156,6 @@ func (w *Watcher) readConfigMap() error {
 				}
 				if ns.Configurations == nil {
 					return fmt.Errorf("invalid namespace '%s' in %s/%s", nsKey, appKey, clusterKey)
-				}
-				if ns.ReleaseKey == "" {
-					return fmt.Errorf("invalid releaseKey '%s' in %s/%s/%s", ns.ReleaseKey, appKey, clusterKey, nsKey)
 				}
 				for configKey := range ns.Configurations {
 					if configKey == "" {
