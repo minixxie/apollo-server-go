@@ -12,7 +12,14 @@ This project currently supports 3 APIs for fetching config:
 * GET /notifications/v2 _(long polling)_
 
 # Usage Guide
+
+## Docker
+Docker image can be used to quickly get started:\
+`docker pull quay.io/lalamove/mock-apollo-go`
+
 ## Building it locally
+Alternatively, you can also build it locally.
+
 `$ make`\
 `$ ./mock-apollo-go --help`
 ```
