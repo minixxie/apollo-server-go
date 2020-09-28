@@ -46,7 +46,7 @@ func main() {
 	termChan := make(chan os.Signal)
 	signal.Notify(termChan, syscall.SIGINT, syscall.SIGTERM)
 
-	// internal server for telemerty and ctrl
+	// internal server for telemetry and ctrl
 	internalRouter := httprouter.New()
 	ctrlRoutes(internalRouter)
 	pprofRoutes(internalRouter)

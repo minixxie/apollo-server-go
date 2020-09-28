@@ -1,0 +1,21 @@
+name: Go CI Action
+
+# Run this workflow every time a new commit pushed to your repository
+on: push
+
+jobs:
+  test:
+    name: test
+    # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#github-hosted-runners
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: '1.15'
+      - run: go build ./cmd/mock-apollo-go
+      - run: go vet ./...
+      - run: go test -race ./...

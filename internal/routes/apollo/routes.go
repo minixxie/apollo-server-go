@@ -52,12 +52,10 @@ func validateConfig(cfg *Config) {
 
 // Routes registers the http handles for Apollo
 func (a *Apollo) Routes(r *httprouter.Router) {
-	r.GET("/healthz", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		w.Write([]byte("OK"))
-	})
+	r.GET("/healthz", a.healthz)
 	r.GET("/configs/:appId/:cluster/:namespace", a.queryConfig)
 	r.GET("/configfiles/json/:appId/:cluster/:namespace", a.queryConfigJSON)
-	r.GET("/notifications/v2", a.notificationsLongPolling)
+	r.GET("/notifications/v2", a.longPolling)
 
 	// capture invalid http calls
 	r.HandleMethodNotAllowed = false
@@ -72,6 +70,14 @@ func (h *notFoundHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.log.Get().Warn(fmt.Sprintf("http path not found: %s %s", r.Method, r.URL.String()))
 	w.WriteHeader(404)
 	w.Write([]byte("path not found"))
+}
+
+func (a *Apollo) healthz(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	// make sure there's no deadlock
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	w.Write([]byte("OK"))
 }
 
 func (a *Apollo) queryConfig(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -135,7 +141,7 @@ func (a *Apollo) queryConfigJSON(w http.ResponseWriter, r *http.Request, ps http
 	log.Debug(fmt.Sprintf("served config for request: %s", r.URL.String()))
 }
 
-func (a *Apollo) notificationsLongPolling(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (a *Apollo) longPolling(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	v, ok := r.URL.Query()["notifications"]
 	if !ok && len(v) != 1 {
 		a.cfg.Log.Get().Warn(fmt.Sprintf("invalid request: %s", r.URL.String()))

@@ -64,7 +64,7 @@ func New(ctx context.Context, cfg Config, w http.ResponseWriter) (*Poll, error) 
 		}()
 		select {
 		case <-ctx.Done():
-			cfg.Log.Get().Debug("poll context was cancelled, stoped watching for a change")
+			cfg.Log.Get().Debug("poll context was cancelled, stopped watching for a change")
 			w.WriteHeader(304)
 		case <-done:
 			cfg.Log.Get().Debug("poll timed out with no updates")

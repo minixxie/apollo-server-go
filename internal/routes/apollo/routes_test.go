@@ -190,7 +190,7 @@ func TestNotificationsLongPolling(t *testing.T) {
 			time.Sleep(5 * time.Millisecond)
 			a.w.TriggerEvent()
 		}()
-		a.notificationsLongPolling(w, req, ps)
+		a.longPolling(w, req, ps)
 		rsp := w.Result()
 		require.Equal(t, 200, rsp.StatusCode)
 		b, err := ioutil.ReadAll(rsp.Body)
@@ -225,7 +225,7 @@ func TestNotificationsLongPolling(t *testing.T) {
 			httprouter.Param{Key: "cluster", Value: "cluster"},
 			httprouter.Param{Key: "namespace", Value: "ns"},
 		}
-		a.notificationsLongPolling(w, req, ps)
+		a.longPolling(w, req, ps)
 		rsp := w.Result()
 		require.Equal(t, 304, rsp.StatusCode)
 		b, err := ioutil.ReadAll(rsp.Body)
@@ -259,7 +259,7 @@ func TestNotificationsLongPolling(t *testing.T) {
 			time.Sleep(5 * time.Millisecond)
 			cancel()
 		}()
-		a.notificationsLongPolling(w, req, ps)
+		a.longPolling(w, req, ps)
 		rsp := w.Result()
 		require.Equal(t, 304, rsp.StatusCode)
 		b, err := ioutil.ReadAll(rsp.Body)
