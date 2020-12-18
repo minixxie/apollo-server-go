@@ -30,6 +30,10 @@ var stubConfigs = []watcher.ConfigMap{
 	},
 }
 
+func TestQueryService(t *testing.T) {
+
+}
+
 func TestQueryConfig(t *testing.T) {
 	// mock fs
 	appFS := afero.NewMemMapFs()
@@ -39,10 +43,13 @@ func TestQueryConfig(t *testing.T) {
 	require.Nil(t, afero.WriteFile(appFS, "/dev/null", data, 0644))
 
 	// setup apollo
-	a, err := New(context.Background(), Config{ConfigPath: "/dev/null"})
+	filepaths := []string{"/dev/null"}
+	a, err := New(context.Background(), Config{ConfigPath: filepaths})
 	require.EqualError(t, err, "invalid config file")
-	a.w.MockFS(appFS)
-	require.Nil(t, a.w.ReloadConfig())
+	for _, w := range a.w {
+		w.MockFS(appFS)
+		require.Nil(t, w.ReloadConfig())
+	}
 
 	t.Run("status 200", func(t *testing.T) {
 		// call the handler
@@ -115,10 +122,13 @@ func TestQueryConfigJSON(t *testing.T) {
 	require.Nil(t, afero.WriteFile(appFS, "/dev/null", data, 0644))
 
 	// setup apollo
-	a, err := New(context.Background(), Config{ConfigPath: "/dev/null"})
+	filepaths := []string{"/dev/null"}
+	a, err := New(context.Background(), Config{ConfigPath: filepaths})
 	require.EqualError(t, err, "invalid config file")
-	a.w.MockFS(appFS)
-	require.Nil(t, a.w.ReloadConfig())
+	for _, w := range a.w {
+		w.MockFS(appFS)
+		require.Nil(t, w.ReloadConfig())
+	}
 
 	t.Run("status 200", func(t *testing.T) {
 		// call the handler
@@ -162,7 +172,8 @@ func TestQueryConfigJSON(t *testing.T) {
 func TestNotificationsLongPolling(t *testing.T) {
 	t.Run("change", func(t *testing.T) {
 		// setup apollo
-		a, err := New(context.Background(), Config{ConfigPath: "/dev/null"})
+		filepaths := []string{"/dev/null"}
+		a, err := New(context.Background(), Config{ConfigPath: filepaths})
 		require.Error(t, err)
 
 		// mock fs
@@ -171,7 +182,9 @@ func TestNotificationsLongPolling(t *testing.T) {
 		data, err := yaml.Marshal(stubConfigs[0])
 		require.Nil(t, err)
 		require.Nil(t, afero.WriteFile(appFS, "/dev/null", data, 0644))
-		a.w.MockFS(appFS)
+		for _, w := range a.w {
+			w.MockFS(appFS)
+		}
 
 		// call the handler
 		q := "?notifications=" + url.QueryEscape(`[{"notificationId":1,"namespaceName":"ns"}]`)
@@ -188,7 +201,9 @@ func TestNotificationsLongPolling(t *testing.T) {
 		go func() {
 			// trigger config update in the background
 			time.Sleep(5 * time.Millisecond)
-			a.w.TriggerEvent()
+			for _, w := range a.w {
+				w.TriggerEvent()
+			}
 		}()
 		a.longPolling(w, req, ps)
 		rsp := w.Result()
@@ -209,12 +224,15 @@ func TestNotificationsLongPolling(t *testing.T) {
 		appFS.MkdirAll("/dev", 0755)
 
 		// setup apollo
+		filepaths := []string{"/dev/null"}
 		a, err := New(context.Background(), Config{
-			ConfigPath:  "/dev/null",
+			ConfigPath:  filepaths,
 			PollTimeout: time.Second,
 		})
 		require.Error(t, err)
-		a.w.MockFS(appFS)
+		for _, w := range a.w {
+			w.MockFS(appFS)
+		}
 
 		// call the handler
 		q := "?notifications=" + url.QueryEscape(`[{"notificationId":1,"namespaceName":"ns"}]`)
@@ -239,9 +257,12 @@ func TestNotificationsLongPolling(t *testing.T) {
 		appFS.MkdirAll("/dev", 0755)
 
 		// setup apollo
-		a, err := New(context.Background(), Config{ConfigPath: "/dev/null"})
+		filepaths := []string{"/dev/null"}
+		a, err := New(context.Background(), Config{ConfigPath: filepaths})
 		require.Error(t, err)
-		a.w.MockFS(appFS)
+		for _, w := range a.w {
+			w.MockFS(appFS)
+		}
 
 		// call the handler
 		q := "?notifications=" + url.QueryEscape(`[{"notificationId":1,"namespaceName":"ns"}]`)

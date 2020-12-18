@@ -13,12 +13,13 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/lalamove/mock-apollo-go/internal/routes/apollo"
+	"github.com/lalamove/mock-apollo-go/pkg/flagarray"
 	"github.com/lalamove/nui/nlogger"
 	"github.com/sirupsen/logrus"
 )
 
 var (
-	filePath     string
+	filePaths    flagarray.FlagArray
 	configPort   int
 	internalPort int
 	pollTimeout  time.Duration
@@ -26,7 +27,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&filePath, "file", "./configs/example.yaml", "config filepath")
+	flag.Var(&filePaths, "file", "config filepath")
 	flag.IntVar(&internalPort, "internal-port", 9090, "internal HTTP server port")
 	flag.IntVar(&configPort, "config-port", 8070, "config HTTP server port")
 	flag.DurationVar(&pollTimeout, "poll-timeout", time.Minute, "long poll timeout")
@@ -36,8 +37,14 @@ func init() {
 }
 
 func validateInput() {
-	if _, err := os.Stat(filePath); err != nil {
-		log.Fatal(err)
+	if len(filePaths) == 0 {
+		log.Fatal("missing file arguments")
+	}
+
+	for _, f := range filePaths {
+		if _, err := os.Stat(f); err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 
@@ -63,9 +70,10 @@ func main() {
 	// public server for serving config via Apollo APIs
 	router := httprouter.New()
 	a, err := apollo.New(ctx, apollo.Config{
-		ConfigPath:  filePath,
+		ConfigPath:  filePaths,
 		PollTimeout: pollTimeout,
 		Log:         logger,
+		Port:        configPort,
 	})
 	if err != nil {
 		log.Fatal(err)
