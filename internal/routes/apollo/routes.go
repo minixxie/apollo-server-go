@@ -89,13 +89,16 @@ func (a *Apollo) healthz(w http.ResponseWriter, r *http.Request, ps httprouter.P
 func (a *Apollo) getNamespace(appID string, cluster string, namespace string) (watcher.Namespace, error) {
 	for _, w := range a.w {
 		cm := w.Config()
-		fmt.Printf("%+v\n", cm)
+
+		// Trim off suffix .properties first
 		s := strings.TrimSuffix(namespace, ".properties")
 		for _, v := range cm {
 			ns, ok := v[cluster][s]
 			if ok {
 				return ns, nil
 			}
+
+			// Check if ns.properties exist
 			ns, ok = v[cluster][s+".properties"]
 			if ok {
 				return ns, nil
