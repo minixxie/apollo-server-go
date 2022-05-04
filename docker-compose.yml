@@ -6,9 +6,11 @@ services:
     build: .
     volumes:
       - "./config.json:/config.json"
+      - "./configs:/configs"
     working_dir: /app
     environment:
       - GIN_MODE=release
+      - CONFIG_FORMAT=properties
       - URL_PREFIX=http://apollo.local
     ports:
       - "8070:80"
