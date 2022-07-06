@@ -3,3 +3,6 @@ up:
 
 enter:
 	docker run --rm -it -v "$$PWD:/app" -w /app golang:1.14.0 bash
+
+run:
+	PORT=8070 go run . -configFilePath=config.json -configFormat=json
