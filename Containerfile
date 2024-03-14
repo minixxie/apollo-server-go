@@ -20,7 +20,7 @@ ENV VIRTUAL_PORT 80
 ENV VIRTUAL_HOST apollo.localhost
 ENV GIN_MODE release
 
-COPY --from=wtfcoderz/static-healthcheck /healthcheck /
+COPY --from=minixxie/static-healthcheck:1ebd74e /healthcheck /
 HEALTHCHECK --interval=10s --timeout=2s --start-period=1s --retries=2 CMD ["/healthcheck", "-tcp", "127.0.0.1:80"]
 
 CMD ["/main"]
