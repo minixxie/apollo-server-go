@@ -31,7 +31,11 @@ func main() {
 	r.GET("/configs/:appId/:cluster/:namespace", queryConfig(configMap))
 	r.GET("/configfiles/json/:appId/:cluster/:namespace", queryConfigJSON(configMap))
 	r.GET("/notifications/v2", notificationsLongPolling(configMap))
-	r.Run(":80")
+	port := ":80"
+	if os.Getenv("PORT") != "" {
+		port = os.Getenv("PORT")
+	}
+	r.Run(port)
 }
 
 func loadConfigProperties() (map[string]interface{}, error) {

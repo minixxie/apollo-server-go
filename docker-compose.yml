@@ -12,6 +12,7 @@ services:
       - GIN_MODE=release
       - CONFIG_FORMAT=properties
       - URL_PREFIX=http://apollo.local
+      - PORT=80
     ports:
       - "8070:80"
     network_mode: bridge

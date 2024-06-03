@@ -6,7 +6,7 @@ scriptPath=$(cd $(dirname "$0") && pwd)
 
 image=minixxie/apollo-server-go
 commitID=$(git rev-parse HEAD)
-tag=0.0.4
+tag=0.0.5
 platforms=linux/amd64,linux/arm64/v8
 
 nerdctl build . \
