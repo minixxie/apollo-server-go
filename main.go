@@ -33,7 +33,7 @@ func main() {
 	r.GET("/notifications/v2", notificationsLongPolling(configMap))
 	port := ":80"
 	if os.Getenv("PORT") != "" {
-		port = os.Getenv("PORT")
+		port = ":" + os.Getenv("PORT")
 	}
 	r.Run(port)
 }
